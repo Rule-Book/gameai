@@ -1,6 +1,10 @@
 #include <string>
 #include <iostream>
 
+class FSMState;
+class FSMTransition;
+class FSMStateMachine;
+
 class FSMState
 {
 	virtual void onEnter();
