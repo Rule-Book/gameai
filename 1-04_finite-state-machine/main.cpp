@@ -1,5 +1,6 @@
 #include <string>
 #include <iostream>
+#include <list>
 
 class FSMState;
 class FSMTransition;
@@ -10,7 +11,7 @@ class FSMState
 	virtual void onEnter();
 	virtual void onUpdate();
 	virtual void onExit();
-	list<FSMTransition> transitions;
+	std::list<FSMTransition> transitions;
 };
 
 class FSMTransition
@@ -23,7 +24,7 @@ class FSMTransition
 class FiniteStateMachine
 {
 	void update();
-	list<FSMState> states;
+	std::list<FSMState> states;
 	FSMState* initialState;
 	FSMState* activeState;
 };
