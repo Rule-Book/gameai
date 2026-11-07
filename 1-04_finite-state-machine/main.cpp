@@ -26,7 +26,9 @@ class FSMTransition
 class FiniteStateMachine
 {
 	public:
-	void update() {};
+	void update() {
+		activeState->onUpdate();
+	};
 	std::list<FSMState> states;
 	FSMState* initialState;
 	FSMState* activeState;
@@ -84,11 +86,11 @@ class TakeOffShirtFromShirtStateTransition : public FSMTransition {
 
 int main() {
 	std::cout << "Hello, World" << std::endl;
-	NakedState suitUp;
-	suitUp.onEnter();
-	suitUp.onUpdate();
-	suitUp.onExit();
+	NakedState shirtless;
+	ShirtState shirtful;
 	FiniteStateMachine OutfitStateMachine;
+	OutfitStateMachine.initialState = &shirtless;
+	OutfitStateMachine.activeState = &shirtless;
 	for (int i=0; i<10; i++) {
 		OutfitStateMachine.update();
 	}
