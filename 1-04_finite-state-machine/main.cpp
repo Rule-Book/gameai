@@ -58,9 +58,33 @@ class ShirtState : public FSMState {
 		};
 };
 
+class WearShirtFromNakedStateTransition : public FSMTransition {
+	bool isValid() override { 
+		return true;
+	};
+	FSMState* getNextState() override {
+		return new ShirtState();
+	};
+	void onTransition() override {
+		std::cout << "Wearing Shirt from Naked" << std::endl;
+	};
+};
+
+class TakeOffShirtFromShirtStateTransition : public FSMTransition {
+	bool isValid() override { 
+		return true;
+	};
+	FSMState* getNextState() override {
+		return new NakedState();
+	};
+	void onTransition() override {
+		std::cout << "Taking off shirt from Shirt State" << std::endl;
+	};
+};
+
 int main() {
 	std::cout << "Hello, World" << std::endl;
-	Naked suitUp;
+	NakedState suitUp;
 	suitUp.onEnter();
 	suitUp.onUpdate();
 	suitUp.onExit();
