@@ -29,7 +29,7 @@ class FiniteStateMachine
 	void update() {
 		activeState->onUpdate();
 	};
-	std::list<FSMState> states;
+	std::list<FSMState> states; // unused
 	FSMState* initialState;
 	FSMState* activeState;
 };
@@ -91,6 +91,12 @@ int main() {
 	FiniteStateMachine OutfitStateMachine;
 	OutfitStateMachine.initialState = &shirtless;
 	OutfitStateMachine.activeState = &shirtless;
+	OutfitStateMachine.states.push_back(shirtless);
+	OutfitStateMachine.states.push_back(shirtful);
+	TakeOffShirtFromShirtStateTransition shirtOffTransition;
+	shirtful.transitions.push_back(shirtOffTransition);
+	WearShirtFromNakedStateTransition shirtOnTransition; 
+	shirtless.transitions.push_back(shirtOnTransition);
 	for (int i=0; i<10; i++) {
 		OutfitStateMachine.update();
 	}
