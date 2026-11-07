@@ -12,7 +12,7 @@ class FSMState
 	virtual void onEnter() {};
 	virtual void onUpdate() {};
 	virtual void onExit() {};
-	std::list<FSMTransition> transitions;
+	std::list<FSMTransition*> transitions;
 };
 
 class FSMTransition
@@ -45,6 +45,10 @@ class NakedState : public FSMState {
 		void onExit() override {
 			std::cout << "Exit Naked FSMState" << std::endl;
 		};
+		NakedState() {
+			transitions.push_back(new TakeOffShirtFromShirtStateTransition());
+			transitions.push_back(new WearShirtFromNakedStateTransition());
+		}
 };
 
 class ShirtState : public FSMState {
@@ -93,10 +97,6 @@ int main() {
 	OutfitStateMachine.activeState = &shirtless;
 	OutfitStateMachine.states.push_back(shirtless);
 	OutfitStateMachine.states.push_back(shirtful);
-	TakeOffShirtFromShirtStateTransition shirtOffTransition;
-	shirtful.transitions.push_back(shirtOffTransition);
-	WearShirtFromNakedStateTransition shirtOnTransition; 
-	shirtless.transitions.push_back(shirtOnTransition);
 	for (int i=0; i<10; i++) {
 		OutfitStateMachine.update();
 	}
