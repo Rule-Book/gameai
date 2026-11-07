@@ -8,9 +8,10 @@ class FSMStateMachine;
 
 class FSMState
 {
-	virtual void onEnter();
-	virtual void onUpdate();
-	virtual void onExit();
+	public:
+	virtual void onEnter() {};
+	virtual void onUpdate() {};
+	virtual void onExit() {};
 	std::list<FSMTransition> transitions;
 };
 
@@ -29,7 +30,24 @@ class FiniteStateMachine
 	FSMState* activeState;
 };
 
+class Naked : public FSMState {
+	public:
+		void onEnter() override {
+			std::cout << "Entered Naked FSMState" << std::endl;
+		};
+		void onUpdate() override {
+			std::cout << "Update Naked FSMState" << std::endl;
+		};
+		void onExit() override {
+			std::cout << "Exit Naked FSMState" << std::endl;
+		};
+};
+
 int main() {
 	std::cout << "Hello, World" << std::endl;
+	Naked suitUp;
+	suitUp.onEnter();
+	suitUp.onUpdate();
+	suitUp.onExit();
 	return 0;
 }
