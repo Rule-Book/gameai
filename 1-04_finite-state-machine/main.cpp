@@ -113,13 +113,7 @@ class FiniteStateMachine
 
 int main() {
 	std::cout << "Hello, World" << std::endl;
-	NakedState shirtless;
-	ShirtState shirtful;
 	FiniteStateMachine OutfitStateMachine;
-	OutfitStateMachine.initialState = &shirtless;
-	OutfitStateMachine.activeState = &shirtless;
-	OutfitStateMachine.states.push_back(shirtless);
-	OutfitStateMachine.states.push_back(shirtful);
 	for (int i=0; i<10; i++) {
 		OutfitStateMachine.update();
 	}
