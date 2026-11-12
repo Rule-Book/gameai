@@ -55,12 +55,13 @@ class ShirtState : public FSMState {
 };
 
 class WearShirtFromNakedStateTransition : public FSMTransition {
+	public:
 	WearShirtFromNakedStateTransition(FSMState* targetState) : FSMTransition(targetState) {}
 	bool isValid() override { 
 		return true;
 	};
 	FSMState* getNextState() override {
-		return targetState;
+		return nextState;
 	};
 	void onTransition() override {
 		std::cout << "Wearing Shirt from Naked" << std::endl;
@@ -68,12 +69,13 @@ class WearShirtFromNakedStateTransition : public FSMTransition {
 };
 
 class TakeOffShirtFromShirtStateTransition : public FSMTransition {
+	public:
 	TakeOffShirtFromShirtStateTransition(FSMState* targetState) : FSMTransition(targetState) {}
 	bool isValid() override { 
 		return true;
 	};
 	FSMState* getNextState() override {
-		return targetState;
+		return nextState;
 	};
 	void onTransition() override {
 		std::cout << "Taking off shirt from Shirt State" << std::endl;
@@ -86,7 +88,7 @@ class FiniteStateMachine
 	void update() {
 		activeState->onUpdate();
 	};
-	std::list<FSMState> states; /* used to store unique references
+	std::list<FSMState*> states; /* used to store unique references
 				       to all states for ptr reuse
 				       across transtions */
 	FSMState* initialState;
@@ -114,6 +116,7 @@ class FiniteStateMachine
 int main() {
 	std::cout << "Hello, World" << std::endl;
 	FiniteStateMachine OutfitStateMachine;
+	OutfitStateMachine.build();
 	for (int i=0; i<10; i++) {
 		OutfitStateMachine.update();
 	}
