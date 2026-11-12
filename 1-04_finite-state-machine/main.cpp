@@ -17,25 +17,19 @@ class FSMState
 
 class FSMTransition
 {
+	protected: // allow derived class to directly access nextState
+	FSMState* nextState;
 	public:
-	virtual bool isValid() { return true; };
-	virtual FSMState* getNextState() { return nullptr; };
-	virtual void onTransition() {};
-};
+	FSMTransition(FSMState* next) : nextState(next) {}
 
-class FiniteStateMachine
-{
-	public:
-	void update() {
-		activeState->onUpdate();
-	};
-	std::list<FSMState> states; // unused
-	FSMState* initialState;
-	FSMState* activeState;
+	virtual bool isValid() { return true; };
+	virtual FSMState* getNextState() { return nextState; };
+	virtual void onTransition() {};
 };
 
 class NakedState : public FSMState {
 	public:
+			
 		void onEnter() override {
 			std::cout << "Entered Naked FSMState" << std::endl;
 		};
@@ -45,10 +39,6 @@ class NakedState : public FSMState {
 		void onExit() override {
 			std::cout << "Exit Naked FSMState" << std::endl;
 		};
-		NakedState() {
-			transitions.push_back(new TakeOffShirtFromShirtStateTransition());
-			transitions.push_back(new WearShirtFromNakedStateTransition());
-		}
 };
 
 class ShirtState : public FSMState {
@@ -65,11 +55,12 @@ class ShirtState : public FSMState {
 };
 
 class WearShirtFromNakedStateTransition : public FSMTransition {
+	WearShirtFromNakedStateTransition(FSMState* targetState) : FSMTransition(targetState) {}
 	bool isValid() override { 
 		return true;
 	};
 	FSMState* getNextState() override {
-		return new ShirtState();
+		return targetState;
 	};
 	void onTransition() override {
 		std::cout << "Wearing Shirt from Naked" << std::endl;
@@ -77,15 +68,47 @@ class WearShirtFromNakedStateTransition : public FSMTransition {
 };
 
 class TakeOffShirtFromShirtStateTransition : public FSMTransition {
+	TakeOffShirtFromShirtStateTransition(FSMState* targetState) : FSMTransition(targetState) {}
 	bool isValid() override { 
 		return true;
 	};
 	FSMState* getNextState() override {
-		return new NakedState();
+		return targetState;
 	};
 	void onTransition() override {
 		std::cout << "Taking off shirt from Shirt State" << std::endl;
 	};
+};
+
+class FiniteStateMachine
+{
+	public:
+	void update() {
+		activeState->onUpdate();
+	};
+	std::list<FSMState> states; /* used to store unique references
+				       to all states for ptr reuse
+				       across transtions */
+	FSMState* initialState;
+	FSMState* activeState;
+	
+	void build() {
+		// build phase 1 create States and set starting States
+		FSMState* naked = new NakedState();
+		FSMState* shirt = new ShirtState();
+
+		states.push_back(naked);
+		states.push_back(shirt);
+		
+		initialState = activeState = naked;
+
+		// build phase 2 create Transitions
+		FSMTransition* wearShirt = new WearShirtFromNakedStateTransition(shirt);
+		FSMTransition* takeOffShirt = new TakeOffShirtFromShirtStateTransition(naked);
+
+		naked->transitions.push_back(wearShirt);
+		shirt->transitions.push_back(takeOffShirt);
+	}
 };
 
 int main() {
