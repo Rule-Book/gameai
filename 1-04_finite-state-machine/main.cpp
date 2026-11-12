@@ -86,6 +86,17 @@ class FiniteStateMachine
 {
 	public:
 	void update() {
+		for (std::list<FSMTransition*>::iterator it = activeState->transitions.begin(); it != activeState->transitions.end(); ++it) {
+			FSMTransition* t = *it; // dereference array of transitions to single pointer
+			if (t->isValid()) {
+				t->onTransition();
+				activeState->onExit();
+				activeState = t->getNextState();
+				activeState->onEnter();
+				std::cout << "=======" << std::endl;
+				return;
+			}
+		}
 		activeState->onUpdate();
 	};
 	std::list<FSMState*> states; /* used to store unique references
