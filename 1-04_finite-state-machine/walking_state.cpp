@@ -1,6 +1,8 @@
 #include <string>
 #include <iostream>
 #include <list>
+#include <thread>
+#include <chrono>
 
 class FSMState;
 class FSMTransition;
@@ -27,58 +29,59 @@ class FSMTransition
 	virtual void onTransition() {};
 };
 
-class NakedState : public FSMState {
+class WalkState : public FSMState {
 	public:
 			
 		void onEnter() override {
-			std::cout << "Entered Naked FSMState" << std::endl;
+			std::cout << "Entered Walk FSMState" << std::endl;
 		};
 		void onUpdate() override {
-			std::cout << "Update Naked FSMState" << std::endl;
+			std::cout << "Update Walk FSMState" << std::endl;
 		};
 		void onExit() override {
-			std::cout << "Exit Naked FSMState" << std::endl;
+			std::cout << "Exit Walk FSMState" << std::endl;
 		};
 };
 
-class ShirtState : public FSMState {
+class StunState : public FSMState {
 	public: 
 		void onEnter() override {
-			std::cout << "Entered Shirt FSMState" << std::endl;
+			std::cout << "Entered Stun FSMState" << std::endl;
+	 		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		};
 		void onUpdate() override {
-			std::cout << "Update Shirt FSMState" << std::endl;
+			std::cout << "Update Stun FSMState" << std::endl;
 		};
 		void onExit() override {
-			std::cout << "Exit Shirt FSMState" << std::endl;
+			std::cout << "Exit Stun FSMState" << std::endl;
 		};
 };
 
-class WearShirtFromNakedStateTransition : public FSMTransition {
+class ToStunTransition : public FSMTransition {
 	public:
-	WearShirtFromNakedStateTransition(FSMState* targetState) : FSMTransition(targetState) {}
+	ToStunTransition(FSMState* targetState) : FSMTransition(targetState) {} // set to previousState from FSMState::build
 	bool isValid() override { 
-		return true;
+		return rand() % 2 == 1; // chars[x][y]=='o';
 	};
 	FSMState* getNextState() override {
 		return nextState;
 	};
 	void onTransition() override {
-		std::cout << "Wearing Shirt from Naked" << std::endl;
+		std::cout << "Enter Stun\r";
 	};
 };
 
-class TakeOffShirtFromShirtStateTransition : public FSMTransition {
+class FromStunTransition : public FSMTransition {
 	public:
-	TakeOffShirtFromShirtStateTransition(FSMState* targetState) : FSMTransition(targetState) {}
+	FromStunTransition(FSMState* targetState) : FSMTransition(targetState) {}
 	bool isValid() override { 
-		return true;
+		return true; // after being stunned for 3s
 	};
 	FSMState* getNextState() override {
 		return nextState;
 	};
 	void onTransition() override {
-		std::cout << "Taking off shirt from Shirt State" << std::endl;
+		std::cout << "Exit Stun\r";
 	};
 };
 
@@ -87,49 +90,129 @@ class FiniteStateMachine
 	public:
 	void update() {
 		for (std::list<FSMTransition*>::iterator it = activeState->transitions.begin(); it != activeState->transitions.end(); ++it) {
-			FSMTransition* t = *it; // dereference array of transitions to single pointer
+			FSMTransition* t = *it;
 			if (t->isValid()) {
 				t->onTransition();
 				activeState->onExit();
+				previousState = activeState;
 				activeState = t->getNextState();
 				activeState->onEnter();
-				std::cout << "=======" << std::endl;
 				return;
 			}
 		}
 		activeState->onUpdate();
 	};
-	std::list<FSMState*> states; /* used to store unique references
-				       to all states for ptr reuse
-				       across transtions */
+	std::list<FSMState*> states;
 	FSMState* initialState;
 	FSMState* activeState;
+	FSMState* previousState;
 	
 	void build() {
-		// build phase 1 create States and set starting States
-		FSMState* naked = new NakedState();
-		FSMState* shirt = new ShirtState();
+		// build phase 1 create States
+		FSMState* M = new WalkState();
+		FSMState* S = new StunState();
 
-		states.push_back(naked);
-		states.push_back(shirt);
+		states.push_back(M);
+		states.push_back(S);
 		
-		initialState = activeState = naked;
+		initialState = previousState = activeState =M;
 
 		// build phase 2 create Transitions
-		FSMTransition* wearShirt = new WearShirtFromNakedStateTransition(shirt);
-		FSMTransition* takeOffShirt = new TakeOffShirtFromShirtStateTransition(naked);
+		FSMTransition* s = new ToStunTransition(S);
+		FSMTransition* m = new FromStunTransition(previousState);
 
-		naked->transitions.push_back(wearShirt);
-		shirt->transitions.push_back(takeOffShirt);
+		M->transitions.push_back(s);
+		S->transitions.push_back(m);
+		// above doesn't work since transition doesn't know previousState FSMState*
 	}
 };
 
 int main() {
+	srand(time(0));
 	std::cout << "Hello, World" << std::endl;
-	FiniteStateMachine OutfitStateMachine;
-	OutfitStateMachine.build();
+	// create FSM
+	FiniteStateMachine Wander;
+	// initialize States and Transitions
+	Wander.build();
+
+	// call Update loop
 	for (int i=0; i<10; i++) {
-		OutfitStateMachine.update();
+		Wander.update();
 	}
 	return 0;
+	// int n = 8;
+	// char rows[8][8] = {
+	// 	{'.', '.', '.', '.', '.', '.', '.', '.'},
+	// 	{'.', '.', '.', '.', '.', '.', '.', '.'},
+	// 	{'.', '.', '.', '.', '.', '.', '.', '.'},
+	// 	{'.', '.', '.', '.', '.', '.', '.', '.'},
+	// 	{'.', '.', '.', '.', '.', '.', '.', '.'},
+	// 	{'.', '.', '.', '.', '.', '.', '.', '.'},
+	// 	{'.', '.', '.', '.', '.', '.', '.', '.'},
+	// 	{'.', '.', '.', '.', '.', '.', '.', '.'}
+	// };
+	// 
+	// initialPrint(rows);
+
+	// int xPos, yPos;
+	// xPos = 4; yPos = 4;
+	// int rowWidth=8, columnHeight=8;
+	// for (int i=0; i<30; i++) {
+	// 	movePos(&xPos, &yPos, rowWidth, columnHeight);
+	// 	redraw(xPos, yPos, n, rows);
+	// 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	// }
+	// return 0;
+}
+
+
+// BEGIN unused
+
+void printDummyLine() { // without this the last row of characters doesn't show
+	std::cout << std::endl; // dummy line whose output does not display
+	std::cout << "\033[A"; // move cursor above dummy line
+}       
+
+void initialPrint(char inputRows[][8]) { // use vector or list for dynamic size
+	for (int i=0; i<8/*sizeof(inputRows)*/; i++) {
+		for (int j=0; j<sizeof(inputRows[i]); j++) {
+			std::cout << inputRows[i][j];
+		}
+		std::cout << std::endl;
+		printDummyLine();
+	}
+}
+
+void redraw(int x, int y, int len, char inputRows[][8]) {
+	for (int frame = 0; frame < 8; ++frame) {
+		inputRows[x][y] = 'x';
+
+		std::cout << "\033[" << len << "A" << std::flush; // move up 8 lines
+
+		for (int j=0; j<len; ++j) {
+			std::cout << "\033[2K" << std::flush; // clear line text
+			for (int i=0; i<len; ++i) {
+				std::cout << inputRows[i][j];
+			}
+			std::cout << "\033[B"; // move cursor 1 line down
+			std::cout << '\r'; // carriage return moves fully left
+		}
+
+		inputRows[x][y] = '.';
+		printDummyLine();
+	}
+}
+
+void movePos(int* xPtr, int* yPtr, int xWidth, int yHeight) {
+	srand(time(0));
+	for (int i=0; i<10; i++) {
+		if (rand() % 4 == 0 && *yPtr > 0) { // north
+			*yPtr -= 1; return; }
+		if (rand() % 4 == 1 && *xPtr < xWidth-1) { // east
+			*xPtr += 1; return; }
+		if (rand() % 4 == 2 && *yPtr < yHeight-1) { // south
+			*yPtr += 1; return; }
+		if (rand() % 4 == 3 && *xPtr > 0) { // west
+			*xPtr -= 1; return; }
+	}
 }
