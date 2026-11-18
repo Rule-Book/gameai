@@ -1,3 +1,5 @@
+## Test the Code
+
 1. Compile the file(s)
 ```
 g++ walking_state.cpp -o walking_state
@@ -9,13 +11,13 @@ g++ walking_state.cpp -o walking_state
 
 ## Each File's Purpose
 
-# main.cpp
+#### main.cpp
 Connects all 3 FSM classes together to execute transitions between states of wearing and not wearing a shirt.
 * FiniteStateMachine
 * FSMState
 * FSMTransition
 
-# terminal\_gui.cpp
+#### terminal\_gui.cpp
 Program to graphically display a moving character within a char\[8\]\[8\] array
 * initialPrint
   - prints a *blank* 8x8 array of chars
@@ -26,7 +28,7 @@ Program to graphically display a moving character within a char\[8\]\[8\] array
   - clears current line of text
   - redraws array with character 'x' at the new location
 
-# walking\_state.cpp
+#### walking\_state.cpp
 Connects both above programs by simulating movement through use of a FSM
 * Movement State
   - pick a cardinal direction to move in
