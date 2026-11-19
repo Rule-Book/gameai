@@ -57,6 +57,65 @@ double sigmoid(double t, uint8_t numOctaves, std::vector<float> yVals) {
 	return result;
 }
 
+char rows[8][8] = {
+	{'.', '.', '.', '.', '.', '.', '.', '.'},
+	{'.', '.', '.', '.', '.', '.', '.', '.'},
+	{'.', '.', '.', '.', '.', '.', '.', '.'},
+	{'.', '.', '.', '.', '.', '.', '.', '.'},
+	{'.', '.', '.', '.', '.', '.', '.', '.'},
+	{'.', '.', '.', '.', '.', '.', '.', '.'},
+	{'.', '.', '.', '.', '.', '.', '.', '.'},
+	{'.', '.', '.', '.', '.', '.', '.', '.'}
+};
+
+void printDummyLine() {
+	std::cout << std::endl;
+	std::cout << "\033[A";
+}
+
+void initialPrint(char inputRows[][8]) {
+	for (int i=0; i<8; i++) {
+		for (int j=0; j<sizeof(inputRows[i]); j++) {
+			std::cout << inputRows[i][j];
+		}
+		std::cout << std::endl;
+		printDummyLine();
+	}
+}
+
+void colorSet(int clr) {
+	std::cout << "\033[38;5;" << (clr%256) << "m";
+}
+
+void colorUnSet() {
+	std::cout << "\033[38;5;255m";
+}
+
+void redraw(int x, int y, int len, char inputRows[][8], char c, int clr) {
+	inputRows[x][y] = c;
+	for (int frame = 0; frame < 8; ++frame) {
+		std::cout << "\033[" << len << "A" << std::flush; // move up 8 lines
+
+		for (int j=0; j<len; ++j) {
+			std::cout << "\033[2K" << std::flush; // clear line text
+			for (int i=0; i<len; ++i) {
+				if (i == x && j == y) {
+					colorSet(clr);
+					std::cout << c;
+					colorUnSet();
+					continue;
+				}
+				std::cout << inputRows[i][j];
+			}
+			std::cout << "\033[B"; // move cursor 1 line down
+			std::cout << '\r'; // carriage return moves fully left
+		}
+
+		printDummyLine();
+	}
+	//inputRows[x][y] = '.';
+}
+
 int main() {
 	int t; // f(t) for sigmoid fn
 	int p; // persistence, drives amplitude of octaves
@@ -92,9 +151,10 @@ int main() {
 		// Change color based on result, print, then return color back to white
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		std::cout << "\033[A\r\033[K";
-		std::cout << "\033[38;5;" << (color%256) << "m" << blocks.substr(0, bNum) << "\033[38;5;255m" << std::endl;
+		std::cout << blocks.substr(0, bNum) << std::endl;
+		redraw((int)(d*8), (int)(output*(-8)+8), 8, rows, '@', color); 
 	}
 	if (color < 0)
-		std::cout << "Expected yVals.size() : " << (int)expectedValsForOctave(i) << '/' << ybounds.size() << std::endl;
+		std::cout << "Expected yVals.size(): " << (int)expectedValsForOctave(i) << '/' << ybounds.size() << std::endl;
 	return 0;
 }
