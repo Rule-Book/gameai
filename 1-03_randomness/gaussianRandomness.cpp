@@ -14,11 +14,12 @@ double GaussianRand() {
 		seed ^= seed >> 17; // 13 17 5 is the best theoretical pseudo rng for 32 bit numbers, use 13 7 17 for 64-bit
 		seed ^= seed << 5;
 		int32_t r= (int64_t)(holdseed + seed); // cut off any bits past 32
-		sum += (double)r * (1.0/0x7FFFFFFFFFFFFFFF); // 64 bits where the first bit is 0 so it's positive
+		sum += (double)r * (1.0/0x7FFFFFFF/*FFFFFFFF*/); // 64 bits where the first bit is 0 so it's positive
 	}
 	return sum; // returns [-3.0, 3.0] at (66.7%, 95.8%, 100%) stdev is sqrt(K/3)
 }
 
 int main() {
+seed = 970100;
 	std::cout << GaussianRand() << std::endl;
 }
