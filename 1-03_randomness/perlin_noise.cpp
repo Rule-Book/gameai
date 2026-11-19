@@ -36,17 +36,17 @@ double sigmoid(double t, uint8_t numOctaves, std::vector<float> yVals) {
 	double result = 0.0;
 
 	for (uint8_t i = 1; i <= numOctaves; i++) {
-	int numRanges = pow(2, i-1) + 1; //rename to numbers, and numRanges-1 to numRanges
-	// do I need to calculate every octave before I can return anything?
-	// yes but only for the specific t value
-	// at most, one sigmoid sum per octave, and stretching sigmoid to match range
-	double rangeWidth = 1.0/(numRanges-1); // 2 numbers at octave 1, but only 1 range
-	int octaveHorizontalSegment = (int)(t/rangeWidth);
-	double x1 = octaveHorizontalSegment * rangeWidth; // drop remainder to get clean x-ranges
-	double x2 = (octaveHorizontalSegment+1) * rangeWidth;
-	double y1 = yValCopy.at(octaveHorizontalSegment);
-	double y2 = yValCopy.at(octaveHorizontalSegment+1);
-		result += interpolateSigmoidAcrossPoints(t, x1, y1, x2, y2, 0.5, i);
+		int numRanges = pow(2, i-1) + 1; //rename to numbers, and numRanges-1 to numRanges
+		// do I need to calculate every octave before I can return anything?
+		// yes but only for the specific t value
+		// at most, one sigmoid sum per octave, and stretching sigmoid to match range
+		double rangeWidth = 1.0/(numRanges-1); // 2 numbers at octave 1, but only 1 range
+		int octaveHorizontalSegment = (int)(t/rangeWidth);
+		double x1 = octaveHorizontalSegment * rangeWidth; // drop remainder to get clean x-ranges
+		double x2 = (octaveHorizontalSegment+1) * rangeWidth;
+		double y1 = yValCopy.at(octaveHorizontalSegment);
+		double y2 = yValCopy.at(octaveHorizontalSegment+1);
+		result += interpolateSigmoidAcrossPoints(t, x1, y1, x2, y2, 0.8, i);
 		// there are numRanges or 2n-1+1
 		// 2 at 1
 		// 3 at 2
@@ -54,6 +54,7 @@ double sigmoid(double t, uint8_t numOctaves, std::vector<float> yVals) {
 		// 9 at 4
 		yValCopy.erase(yValCopy.begin(), yValCopy.begin() + numRanges); // lazy pop value instead of managing dynamic list of arrays
 	}
+	result = result / 1.533; // reduce amplitude to compensate increasing persistence from 0.5-0.8 (for more waves)
 	return result;
 }
 
@@ -68,8 +69,10 @@ char rows[8][20] = {
 	{'.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'}
 };
 
-void printDummyLine() {
+void printDummyLine(double output) {
+	std::cout << output  << std::endl;
 	std::cout << std::endl;
+	std::cout << "\033[A";
 	std::cout << "\033[A";
 }
 
@@ -79,19 +82,49 @@ void initialPrint(char inputRows[][20]) {
 			std::cout << inputRows[i][j];
 		}
 		std::cout << std::endl;
-		printDummyLine();
+		printDummyLine(0.0);
 	}
 }
 
-void colorSet(int clr) {
-	std::cout << "\033[38;5;" << (clr%256) << "m";
+void colorSet(double normalizedColor) {
+	// int color = (int)(normalizedColor * 256);
+	// std::cout << "\033[38;5;" << (normalizedColor%256) << "m";
+	std::cout << normalizedColor;
+	int colorLevel = (int)(normalizedColor * 5.999);
+	int idx = 16 + 36*colorLevel + 6*colorLevel + colorLevel;
+	//std::cout << idx;
+	std::cout << "\033[38;5;" << idx << "m";
+	// there doesn't seem to be an online resource that's linearly interpolated across 256 ansi colors
+	// I would have to create my own interpretation of the ansi colors available and how to interpolate between them
+}
+
+void cubeColorSet(double t) {
+	int color = (int)(t * 5);
+	int r, g, b;
+	if (t < 0.25) {
+		double s = t/0.25;
+		r=0; g=(int)(s*255); b=255;
+	} else if (t < 0.5) {
+		double s = (t-0.25) / 0.25;
+		r=0; g=255; b=(int)(1-s) * 255;
+	} else if (t < 0.75) {
+		double s = (t-0.5) / 0.25;
+		r=(int)(s*255); g=255; b=0;
+	} else {
+		double s = (t-0.75) / 0.25;
+		r=255; g=(int)((1-s)*255); b=0;
+	}
+	std::cout << "\033[38;2;" 
+		<< r << ";"
+		<< g << ";"
+		<< b << "m";
 }
 
 void colorUnSet() {
 	std::cout << "\033[0m";
 }
 
-void redraw(int x, int y, /*int wid,*/ int hei, char inputRows[][20], char c, int clr) {
+void redraw(int x, int y, /*int wid,*/ int hei, char inputRows[][20], char c, double clr) {
 	inputRows[y][x] = c; // 2d array first index decides height...
 	int wid = sizeof(inputRows[0]);
 	for (int frame = 0; frame < hei; ++frame) {
@@ -101,7 +134,7 @@ void redraw(int x, int y, /*int wid,*/ int hei, char inputRows[][20], char c, in
 			std::cout << "\033[2K" << std::flush; // clear line text
 			for (int j=0; j<wid; ++j) {
 				if (j == x && i == y) {
-					colorSet(clr);
+					cubeColorSet(clr);
 					std::cout << c;
 					colorUnSet();
 					continue;
@@ -112,7 +145,7 @@ void redraw(int x, int y, /*int wid,*/ int hei, char inputRows[][20], char c, in
 			std::cout << '\r'; // carriage return moves fully left
 		}
 
-		printDummyLine();
+		printDummyLine(clr);
 	}
 	//inputRows[x][y] = '.';
 }
@@ -122,6 +155,7 @@ int main() {
 	int p; // persistence, drives amplitude of octaves
 	uint8_t i = 3; // octave
 	std::vector<float> ybounds;
+	/* hardcoded values from gameaipro
 	ybounds.push_back(0.01); // Octave 1
 	ybounds.push_back(0.99);
 	ybounds.push_back(0.38); // Octave 2
@@ -132,6 +166,14 @@ int main() {
 	ybounds.push_back(0.5);
 	ybounds.push_back(0.935);
 	ybounds.push_back(0.6);
+	*/
+	srand(time(0));
+	for (int n=0; n<expectedValsForOctave(i); n++)
+		ybounds.push_back((float)((rand() >> 8) % 256)/256);
+	if ((ybounds.empty()) || ybounds.size() != expectedValsForOctave(i)) {
+		std::cout << "Expected yVals.size(): " << (int)expectedValsForOctave(i) << '/' << ybounds.size() << std::endl;
+		return 0;
+	}
 	// there should be 2^(n-1) + 1 equidistant ranges of sigmoid functions per octave
 	// octave 1 has one range [0,5),[5,1]
 	// octave 2 has three ranges [0,.3),[.3,.6),[.6,1]
@@ -140,23 +182,14 @@ int main() {
 	// each octave is multiplied by persistence^(octave) and summed
 		   // amplitude of octave = pow(p,i)
 	double output;
+	int color = 0;
 	std::cout << "Output: " << std::endl;
-	int color = 255;
-	std::string blocks(40, '@');
 	initialPrint(rows);
 	for (double d=0.0; d<=1.0; d+=0.01) {
 		output = sigmoid(d, i, ybounds);
-		color = (int)(output * 256);
-		if (color < 0)
-			continue;
-		int bNum = (int)(d * 40);
 		// Change color based on result, print, then return color back to white
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
-		std::cout << "\033[A\r\033[K";
-		std::cout << blocks.substr(0, bNum) << std::endl;
-		redraw((int)(d*20), (int)(output*(-8)+8), 8, rows, '@', color); 
+		std::this_thread::sleep_for(std::chrono::milliseconds(60));
+		redraw((int)(d*20), (int)(output*(-8)+8), 8, rows, '@', output); 
 	}
-	if (color < 0)
-		std::cout << "Expected yVals.size(): " << (int)expectedValsForOctave(i) << '/' << ybounds.size() << std::endl;
 	return 0;
 }
