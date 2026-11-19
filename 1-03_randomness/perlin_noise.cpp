@@ -6,7 +6,11 @@
 #include <chrono>
 #include <string>
 
-double interpolateSigmoidAcrossPoints(double t, double x1, double y1, double x2, double y2, double p, int i) {
+uint8_t expectedValsForOctave(uint8_t i) {
+	return (1 << i) + i - 1;
+}
+
+double interpolateSigmoidAcrossPoints(double t, double x1, double y1, double x2, double y2, double p, uint8_t i) {
 	if (t < x1 || x2 < t) { // confirm input lies within x-boundaries
 		std::cout << "Out of Bounds [" << x1 << " < " << t << " < " << x2 << "]" << std::endl;
 		return 0;
@@ -24,6 +28,9 @@ double interpolateSigmoidAcrossPoints(double t, double x1, double y1, double x2,
 }	       
 
 double sigmoid(double t, uint8_t numOctaves, std::vector<float> yVals) {
+	// calculate expected number of yVals before starting
+	if ((yVals.empty()) || yVals.size() != expectedValsForOctave(numOctaves))
+		return -1;
 	std::vector<float> yValCopy;
 	yValCopy.assign(yVals.begin(), yVals.end()); // copy w/o affecting original
 	double result = 0.0;
@@ -53,7 +60,13 @@ double sigmoid(double t, uint8_t numOctaves, std::vector<float> yVals) {
 int main() {
 	int t; // f(t) for sigmoid fn
 	int p; // persistence, drives amplitude of octaves
-	int i = 1; // octave
+	uint8_t i = 2; // octave
+	std::vector<float> ybounds;
+	ybounds.push_back(0.01);
+	ybounds.push_back(0.99);
+	ybounds.push_back(0.1);
+	ybounds.push_back(0.9);
+	ybounds.push_back(0.3);
 	// there should be 2^(n-1) + 1 equidistant ranges of sigmoid functions per octave
 	// octave 1 has one range [0,5),[5,1]
 	// octave 2 has three ranges [0,.3),[.3,.6),[.6,1]
@@ -63,19 +76,20 @@ int main() {
 		   // amplitude of octave = pow(p,i)
 	double output;
 	std::cout << "Output: " << std::endl;
-	std::vector<float> ybounds;
-	ybounds.push_back(0.9);
-	ybounds.push_back(0.1);
 	int color = 255;
 	std::string blocks(40, '@');
 	for (double d=0.0; d<=1.0; d+=0.01) {
-		output = sigmoid(d, 1, ybounds);
+		output = sigmoid(d, i, ybounds);
 		color = (int)(output * 256);
+		if (color < 0)
+			continue;
 		int bNum = (int)(d * 40);
 		// Change color based on result, print, then return color back to white
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		std::cout << "\033[A\r\033[K";
 		std::cout << "\033[38;5;" << (color%256) << "m" << blocks.substr(0, bNum) << "\033[38;5;255m" << std::endl;
 	}
+	if (color < 0)
+		std::cout << "Expected yVals.size() : " << (int)expectedValsForOctave(i) << '/' << ybounds.size() << std::endl;
 	return 0;
 }
