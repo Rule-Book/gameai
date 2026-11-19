@@ -4,6 +4,7 @@
 #include <list>
 #include <thread>
 #include <chrono>
+#include <string>
 
 double interpolateSigmoidAcrossPoints(double t, double x1, double y1, double x2, double y2, double p, int i) {
 	if (t < x1 || x2 < t) { // confirm input lies within x-boundaries
@@ -22,17 +23,17 @@ double interpolateSigmoidAcrossPoints(double t, double x1, double y1, double x2,
 	return result;
 }	       
 
-double sigmoid(double t, uint8_t octaves, std::list<float> yVals) {
-	int numRanges = pow(2, octaves-1) + 1;
+double sigmoid(double t, uint8_t numOctaves, std::list<float> yVals) {
+	int numRanges = pow(2, numOctaves-1) + 1;
 	// do I need to calculate every octave before I can return anything?
 	// yes but only for the specific t value
 	// at most, one sigmoid sum per octave, and stretching sigmoid to match range
-	double rangeWidth = 1.0/numRanges;
+	double rangeWidth = 1.0/(numRanges-1); // 2 numbers at octave 1, but only 1 range
 	double x1 = (int)(t/rangeWidth) * rangeWidth; // drop remainder to get clean x-ranges
 	double x2 = x1 + rangeWidth;
 
 	double result = 0.0;
-	for (uint8_t i = 1; i <= octaves; i++) {
+	for (uint8_t i = 1; i <= numOctaves; i++) {
 		result += interpolateSigmoidAcrossPoints(t, x1, 0.0, x2, 1.0, 0.5, i);
 	}
 	return result;
@@ -54,11 +55,16 @@ int main() {
 	std::list<float> ybounds;
 	ybounds.push_back(0.9);
 	ybounds.push_back(0.1);
-	output = sigmoid(0.3, 1, ybounds);
-	int color = (int)(output * 256);
-	// Change color based on result, print, then return color back to white
-	std::this_thread::sleep_for(std::chrono::milliseconds(100));
-	std::cout << "\r\033[K"
-	std::cout << "\033[38;5;" << (color%256) << "m" << output << "\033[38;5;255m" << std::endl;
+	int color = 255;
+	std::string blocks(40, '@');
+	for (double d=0.0; d<=1.0; d+=0.01) {
+		output = sigmoid(d, 1, ybounds);
+		color = (int)(output * 256);
+		int bNum = (int)(d * 40);
+		// Change color based on result, print, then return color back to white
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		std::cout << "\033[A\r\033[K";
+		std::cout << "\033[38;5;" << (color%256) << "m" << blocks.substr(0, bNum) << "\033[38;5;255m" << std::endl;
+	}
 	return 0;
 }
