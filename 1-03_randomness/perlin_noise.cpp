@@ -60,13 +60,18 @@ double sigmoid(double t, uint8_t numOctaves, std::vector<float> yVals) {
 int main() {
 	int t; // f(t) for sigmoid fn
 	int p; // persistence, drives amplitude of octaves
-	uint8_t i = 2; // octave
+	uint8_t i = 3; // octave
 	std::vector<float> ybounds;
-	ybounds.push_back(0.01);
+	ybounds.push_back(0.01); // Octave 1
 	ybounds.push_back(0.99);
-	ybounds.push_back(0.1);
-	ybounds.push_back(0.9);
-	ybounds.push_back(0.3);
+	ybounds.push_back(0.38); // Octave 2
+	ybounds.push_back(0.88);
+	ybounds.push_back(0.0);
+	ybounds.push_back(0.2); // Octave 3
+	ybounds.push_back(0.015);
+	ybounds.push_back(0.5);
+	ybounds.push_back(0.935);
+	ybounds.push_back(0.6);
 	// there should be 2^(n-1) + 1 equidistant ranges of sigmoid functions per octave
 	// octave 1 has one range [0,5),[5,1]
 	// octave 2 has three ranges [0,.3),[.3,.6),[.6,1]
