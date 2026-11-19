@@ -1,7 +1,7 @@
 #include <iostream>
 #include <cmath>
 #include <cstdint>
-#include <list>
+#include <vector>
 #include <thread>
 #include <chrono>
 #include <string>
@@ -23,18 +23,29 @@ double interpolateSigmoidAcrossPoints(double t, double x1, double y1, double x2,
 	return result;
 }	       
 
-double sigmoid(double t, uint8_t numOctaves, std::list<float> yVals) {
-	int numRanges = pow(2, numOctaves-1) + 1;
+double sigmoid(double t, uint8_t numOctaves, std::vector<float> yVals) {
+	std::vector<float> yValCopy;
+	yValCopy.assign(yVals.begin(), yVals.end()); // copy w/o affecting original
+	double result = 0.0;
+
+	for (uint8_t i = 1; i <= numOctaves; i++) {
+	int numRanges = pow(2, i-1) + 1; //rename to numbers, and numRanges-1 to numRanges
 	// do I need to calculate every octave before I can return anything?
 	// yes but only for the specific t value
 	// at most, one sigmoid sum per octave, and stretching sigmoid to match range
 	double rangeWidth = 1.0/(numRanges-1); // 2 numbers at octave 1, but only 1 range
-	double x1 = (int)(t/rangeWidth) * rangeWidth; // drop remainder to get clean x-ranges
-	double x2 = x1 + rangeWidth;
-
-	double result = 0.0;
-	for (uint8_t i = 1; i <= numOctaves; i++) {
-		result += interpolateSigmoidAcrossPoints(t, x1, 0.0, x2, 1.0, 0.5, i);
+	int octaveHorizontalSegment = (int)(t/rangeWidth);
+	double x1 = octaveHorizontalSegment * rangeWidth; // drop remainder to get clean x-ranges
+	double x2 = (octaveHorizontalSegment+1) * rangeWidth;
+	double y1 = yValCopy.at(octaveHorizontalSegment);
+	double y2 = yValCopy.at(octaveHorizontalSegment+1);
+		result += interpolateSigmoidAcrossPoints(t, x1, y1, x2, y2, 0.5, i);
+		// there are numRanges or 2n-1+1
+		// 2 at 1
+		// 3 at 2
+		// 5 at 3
+		// 9 at 4
+		yValCopy.erase(yValCopy.begin(), yValCopy.begin() + numRanges); // lazy pop value instead of managing dynamic list of arrays
 	}
 	return result;
 }
@@ -52,7 +63,7 @@ int main() {
 		   // amplitude of octave = pow(p,i)
 	double output;
 	std::cout << "Output: " << std::endl;
-	std::list<float> ybounds;
+	std::vector<float> ybounds;
 	ybounds.push_back(0.9);
 	ybounds.push_back(0.1);
 	int color = 255;
