@@ -48,10 +48,13 @@ int main() {
 	// each octave is multiplied by persistence^(octave) and summed
 		   // amplitude of octave = pow(p,i)
 	double output;
+	std::cout << "Output: " << std::endl;
 	std::list<float> ybounds;
 	ybounds.push_back(0.9);
 	ybounds.push_back(0.1);
 	output = sigmoid(0.3, 1, ybounds);
-	std::cout << "Output: " << output << std::endl;
+	int color = (int)(output * 256);
+	// Change color based on result, print, then return color back to white
+	std::cout << "\033[38;5;" << (color%256) << "m" << output << "\033[38;5;255m" << std::endl;
 	return 0;
 }
