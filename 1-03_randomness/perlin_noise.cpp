@@ -2,6 +2,8 @@
 #include <cmath>
 #include <cstdint>
 #include <list>
+#include <thread>
+#include <chrono>
 
 double interpolateSigmoidAcrossPoints(double t, double x1, double y1, double x2, double y2, double p, int i) {
 	if (t < x1 || x2 < t) { // confirm input lies within x-boundaries
@@ -55,6 +57,8 @@ int main() {
 	output = sigmoid(0.3, 1, ybounds);
 	int color = (int)(output * 256);
 	// Change color based on result, print, then return color back to white
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	std::cout << "\r\033[K"
 	std::cout << "\033[38;5;" << (color%256) << "m" << output << "\033[38;5;255m" << std::endl;
 	return 0;
 }
