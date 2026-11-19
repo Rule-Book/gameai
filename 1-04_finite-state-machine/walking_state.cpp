@@ -58,8 +58,8 @@ void initialPrint(char inputRows[][8]) { // use vector or list for dynamic size
 }
 
 void redraw(int x, int y, int len, char inputRows[][8], char c) {
+	inputRows[x][y] = c;
 	for (int frame = 0; frame < 8; ++frame) {
-		inputRows[x][y] = c;
 
 		std::cout << "\033[" << len << "A" << std::flush; // move up 8 lines
 
@@ -72,9 +72,9 @@ void redraw(int x, int y, int len, char inputRows[][8], char c) {
 			std::cout << '\r'; // carriage return moves fully left
 		}
 
-		inputRows[x][y] = '.';
 		printDummyLine();
 	}
+	inputRows[x][y] = '.';
 }
 
 void movePos(int* xPtr, int* yPtr, int xWidth, int yHeight) {
