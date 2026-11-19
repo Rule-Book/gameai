@@ -57,15 +57,15 @@ double sigmoid(double t, uint8_t numOctaves, std::vector<float> yVals) {
 	return result;
 }
 
-char rows[8][8] = {
-	{'.', '.', '.', '.', '.', '.', '.', '.'},
-	{'.', '.', '.', '.', '.', '.', '.', '.'},
-	{'.', '.', '.', '.', '.', '.', '.', '.'},
-	{'.', '.', '.', '.', '.', '.', '.', '.'},
-	{'.', '.', '.', '.', '.', '.', '.', '.'},
-	{'.', '.', '.', '.', '.', '.', '.', '.'},
-	{'.', '.', '.', '.', '.', '.', '.', '.'},
-	{'.', '.', '.', '.', '.', '.', '.', '.'}
+char rows[8][20] = {
+	{'.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'},
+	{'.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'},
+	{'.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'},
+	{'.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'},
+	{'.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'},
+	{'.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'},
+	{'.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'},
+	{'.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'}
 };
 
 void printDummyLine() {
@@ -73,7 +73,7 @@ void printDummyLine() {
 	std::cout << "\033[A";
 }
 
-void initialPrint(char inputRows[][8]) {
+void initialPrint(char inputRows[][20]) {
 	for (int i=0; i<8; i++) {
 		for (int j=0; j<sizeof(inputRows[i]); j++) {
 			std::cout << inputRows[i][j];
@@ -88,18 +88,19 @@ void colorSet(int clr) {
 }
 
 void colorUnSet() {
-	std::cout << "\033[38;5;255m";
+	std::cout << "\033[0m";
 }
 
-void redraw(int x, int y, int len, char inputRows[][8], char c, int clr) {
-	inputRows[x][y] = c;
-	for (int frame = 0; frame < 8; ++frame) {
-		std::cout << "\033[" << len << "A" << std::flush; // move up 8 lines
+void redraw(int x, int y, /*int wid,*/ int hei, char inputRows[][20], char c, int clr) {
+	inputRows[y][x] = c; // 2d array first index decides height...
+	int wid = sizeof(inputRows[0]);
+	for (int frame = 0; frame < hei; ++frame) {
+		std::cout << "\033[" << hei << "A" << std::flush; // move up 8 lines
 
-		for (int j=0; j<len; ++j) {
+		for (int i=0; i<hei; ++i) {
 			std::cout << "\033[2K" << std::flush; // clear line text
-			for (int i=0; i<len; ++i) {
-				if (i == x && j == y) {
+			for (int j=0; j<wid; ++j) {
+				if (j == x && i == y) {
 					colorSet(clr);
 					std::cout << c;
 					colorUnSet();
@@ -142,6 +143,7 @@ int main() {
 	std::cout << "Output: " << std::endl;
 	int color = 255;
 	std::string blocks(40, '@');
+	initialPrint(rows);
 	for (double d=0.0; d<=1.0; d+=0.01) {
 		output = sigmoid(d, i, ybounds);
 		color = (int)(output * 256);
@@ -152,7 +154,7 @@ int main() {
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		std::cout << "\033[A\r\033[K";
 		std::cout << blocks.substr(0, bNum) << std::endl;
-		redraw((int)(d*8), (int)(output*(-8)+8), 8, rows, '@', color); 
+		redraw((int)(d*20), (int)(output*(-8)+8), 8, rows, '@', color); 
 	}
 	if (color < 0)
 		std::cout << "Expected yVals.size(): " << (int)expectedValsForOctave(i) << '/' << ybounds.size() << std::endl;
