@@ -44,9 +44,9 @@ class Unit
 class FSMState
 {
 	public:
-	virtual void onEnter() {};
-	virtual void onUpdate() {};
-	virtual void onExit() {};
+	virtual void onEnter(GameState* gs, Unit* u) {};
+	virtual void onUpdate(GameState* gs, Unit* u) {};
+	virtual void onExit(GameState* gs, Unit* u) {};
 	std::list<FSMTransition*> transitions;
 };
 
@@ -57,34 +57,34 @@ class FSMTransition
 	public:
 	FSMTransition(FSMState* next) : nextState(next) {}
 
-	virtual bool isValid() { return true; };
-	virtual FSMState* getNextState() { return nextState; };
-	virtual void onTransition() {};
+	virtual bool isValid(GameState* gs, Unit* u) { return true; };
+	virtual FSMState* getNextState(GameState* gs, Unit* u) { return nextState; };
+	virtual void onTransition(GameState* gs, Unit* u) {};
 };
 
 class IdentifyTarget : public FSMState {
 	public:
 			
-		void onEnter() override {
+		void onEnter(GameState* gs, Unit* u) override {
 			std::cout << "Entered IdentifyTarget FSMState" << std::endl;
 		};
-		void onUpdate() override {
+		void onUpdate(GameState* gs, Unit* u) override {
 			std::cout << "Update IdentifyTarget FSMState" << std::endl;
 		};
-		void onExit() override {
+		void onExit(GameState* gs, Unit* u) override {
 			std::cout << "Exit IdentifyTarget FSMState" << std::endl;
 		};
 };
 
 class ApproachTarget : public FSMState {
 	public: 
-		void onEnter() override {
+		void onEnter(GameState* gs, Unit* u) override {
 			std::cout << "Entered ApproachTarget FSMState" << std::endl;
 		};
-		void onUpdate() override {
+		void onUpdate(GameState* gs, Unit* u) override {
 			std::cout << "Update ApproachTarget FSMState" << std::endl;
 		};
-		void onExit() override {
+		void onExit(GameState* gs, Unit* u) override {
 			std::cout << "Exit ApproachTarget FSMState" << std::endl;
 		};
 };
@@ -92,13 +92,13 @@ class ApproachTarget : public FSMState {
 class LostTarget : public FSMTransition {
 	public:
 	LostTarget(FSMState* targetState) : FSMTransition(targetState) {}
-	bool isValid() override { 
+	bool isValid(GameState* gs, Unit* u) override { 
 		return true;
 	};
-	FSMState* getNextState() override {
+	FSMState* getNextState(GameState* gs, Unit* u) override {
 		return nextState;
 	};
-	void onTransition() override {
+	void onTransition(GameState* gs, Unit* u) override {
 		std::cout << "reIdentifyTarget after LostTarget" << std::endl;
 	};
 };
@@ -106,33 +106,39 @@ class LostTarget : public FSMTransition {
 class FoundTarget : public FSMTransition {
 	public:
 	FoundTarget(FSMState* targetState) : FSMTransition(targetState) {}
-	bool isValid() override { 
+	bool isValid(GameState* gs, Unit* u) override { 
 		return true;
 	};
-	FSMState* getNextState() override {
+	FSMState* getNextState(GameState* gs, Unit* u) override {
 		return nextState;
 	};
-	void onTransition() override {
+	void onTransition(GameState* gs, Unit* u) override {
 		std::cout << "ApproachTarget after FoundTarget" << std::endl;
 	};
 };
 
 class FiniteStateMachine
 {
+	GameState* gameState;
+	Unit* unit;
 	public:
+	FiniteStateMachine(GameState* gs, Unit* u) {
+		gameState = gs;
+		unit = u;
+	}
 	void update() {
 		for (std::list<FSMTransition*>::iterator it = activeState->transitions.begin(); it != activeState->transitions.end(); ++it) {
 			FSMTransition* t = *it; // dereference array of transitions to single pointer
-			if (t->isValid()) {
-				t->onTransition();
-				activeState->onExit();
-				activeState = t->getNextState();
-				activeState->onEnter();
+			if (t->isValid(gameState, unit)) {
+				t->onTransition(gameState, unit);
+				activeState->onExit(gameState, unit);
+				activeState = t->getNextState(gameState, unit);
+				activeState->onEnter(gameState, unit);
 				std::cout << "=======" << std::endl;
 				return;
 			}
 		}
-		activeState->onUpdate();
+		activeState->onUpdate(gameState, unit);
 	};
 	std::list<FSMState*> states; /* used to store unique references
 				       to all states for ptr reuse
@@ -161,7 +167,7 @@ class FiniteStateMachine
 
 int main() {
 	std::cout << "Hello, World" << std::endl;
-	FiniteStateMachine character1;
+	FiniteStateMachine character1(nullptr, nullptr);
 	character1.build();
 	for (int i=0; i<10; i++) {
 		character1.update();
