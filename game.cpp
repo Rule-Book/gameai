@@ -44,6 +44,12 @@ class Unit
 class FSMState
 {
 	public:
+	GameState* gameState;
+	Unit* unit;
+	FSMState(GameState* gs, Unit* u) {
+		gameState = gs;
+		unit = u;
+	}
 	virtual void onEnter() {};
 	virtual void onUpdate() {};
 	virtual void onExit() {};
@@ -64,7 +70,7 @@ class FSMTransition
 
 class IdentifyTarget : public FSMState {
 	public:
-			
+	IdentifyTarget(GameState* gs, Unit* u) : FSMState(gs, u) {}
 		void onEnter() override {
 			std::cout << "Entered IdentifyTarget FSMState" << std::endl;
 		};
@@ -78,6 +84,7 @@ class IdentifyTarget : public FSMState {
 
 class ApproachTarget : public FSMState {
 	public: 
+	ApproachTarget(GameState* gs, Unit* u) : FSMState(gs, u) {}
 		void onEnter() override {
 			std::cout << "Entered ApproachTarget FSMState" << std::endl;
 		};
@@ -142,8 +149,8 @@ class FiniteStateMachine
 	
 	void build() {
 		// build phase 1 create States and set starting States
-		FSMState* identify = new IdentifyTarget();
-		FSMState* approach = new ApproachTarget();
+		FSMState* identify = new IdentifyTarget(nullptr, nullptr);
+		FSMState* approach = new ApproachTarget(nullptr, nullptr);
 
 		states.push_back(identify);
 		states.push_back(approach);
