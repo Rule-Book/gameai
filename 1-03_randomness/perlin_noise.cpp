@@ -22,7 +22,6 @@ double interpolateSigmoidAcrossPoints(double t, double x1, double y1, double x2,
 	double result = 0.0;
 	t = t - x1; // shift right to 1st x-boundary
 	t = t / (x2-x1); // squash horizontally to 2nd x-boundary
-	
 	result = 6*pow(t,5) - 15*pow(t,4) + 10*pow(t,3); // sigmoid (smooth) function
 	
 	result = result * (y2-y1); // squash vertically towards 2nd y-boundary
@@ -159,6 +158,10 @@ int main() {
 
 	for (double d=0.0; d<=1.0; d+=0.01) {
 		output = sigmoid(d, i, ybounds, p);
+		if (output < -1.0 || 1.5 < output) {
+			std::cout << "Output: " << output << " out of bounds!" << std::endl;
+			return -1;
+		}
 		// Change color based on result, print, then return color back to white
 		std::this_thread::sleep_for(std::chrono::milliseconds(60));
 		redraw((int)(d*20), (int)(output*(-8)+8), 8, rows, '@', output);
