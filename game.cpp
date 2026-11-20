@@ -36,6 +36,8 @@ class Unit
 		atkSpeed = atkSpd;
 		cooldown = cd;
 	}
+	void reduceHealth(int hp) { health -= hp; };
+	int getHealth() { return health; };
 	Unit* target;
 	// Waypoint* destination;
 	/// virtual void getAttackType() { return attackType };
@@ -89,6 +91,19 @@ class ApproachTarget : public FSMState {
 		};
 };
 
+class Dead : public FSMState {
+	public: 
+		void onEnter(GameState* gs, Unit* u) override {
+			std::cout << "Enter Dead State" << std::endl;
+		};
+		void onUpdate(GameState* gs, Unit* u) override {
+			std::cout << "Dying Update" << std::endl;
+		};
+		void onExit(GameState* gs, Unit* u) override {
+			std::cout << "Exit Dead FSMState" << std::endl;
+		};
+};
+
 class LostTarget : public FSMTransition {
 	public:
 	LostTarget(FSMState* targetState) : FSMTransition(targetState) {}
@@ -114,6 +129,20 @@ class FoundTarget : public FSMTransition {
 	};
 	void onTransition(GameState* gs, Unit* u) override {
 		std::cout << "ApproachTarget after FoundTarget" << std::endl;
+	};
+};
+
+class DyingTransition : public FSMTransition {
+	public:
+	DyingTransition(FSMState* targetState) : FSMTransition(targetState) {}
+	bool isValid(GameState* gs, Unit* u) override { 
+		return u->getHealth() < 1;
+	};
+	FSMState* getNextState(GameState* gs, Unit* u) override {
+		return nextState;
+	};
+	void onTransition(GameState* gs, Unit* u) override {
+		std::cout << "Dying" << std::endl;
 	};
 };
 
@@ -150,24 +179,31 @@ class FiniteStateMachine
 		// build phase 1 create States and set starting States
 		FSMState* identify = new IdentifyTarget();
 		FSMState* approach = new ApproachTarget();
+		FSMState* death = new Dead();
 
 		states.push_back(identify);
 		states.push_back(approach);
+		states.push_back(death);
 		
 		initialState = activeState = identify;
 
 		// build phase 2 create Transitions
 		FSMTransition* reidentify = new LostTarget(identify);
 		FSMTransition* reapproach = new FoundTarget(approach);
+		FSMTransition* dying = new DyingTransition(death);
 
 		identify->transitions.push_back(reapproach);
+		identify->transitions.push_back(dying);
 		approach->transitions.push_back(reidentify);
+		approach->transitions.push_back(dying);
 	}
 };
 
 int main() {
 	std::cout << "Hello, World" << std::endl;
-	FiniteStateMachine character1(nullptr, nullptr);
+	// Unit(dmg, hp, atkRng, atkSpd, cd)
+	Unit archer(1, 4, 5, 1, 2);
+	FiniteStateMachine character1(nullptr, &archer);
 	character1.build();
 	for (int i=0; i<10; i++) {
 		character1.update();
