@@ -82,6 +82,7 @@ class ApproachTarget : public FSMState {
 	public: 
 		void onEnter(GameState* gs, Unit* u) override {
 			std::cout << "Entered ApproachTarget FSMState" << std::endl;
+			u->reduceHealth(2);
 		};
 		void onUpdate(GameState* gs, Unit* u) override {
 			std::cout << "Update ApproachTarget FSMState" << std::endl;
@@ -192,10 +193,10 @@ class FiniteStateMachine
 		FSMTransition* reapproach = new FoundTarget(approach);
 		FSMTransition* dying = new DyingTransition(death);
 
-		identify->transitions.push_back(reapproach);
 		identify->transitions.push_back(dying);
-		approach->transitions.push_back(reidentify);
+		identify->transitions.push_back(reapproach);
 		approach->transitions.push_back(dying);
+		approach->transitions.push_back(reidentify);
 	}
 };
 
