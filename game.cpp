@@ -6,6 +6,41 @@ class FSMState;
 class FSMTransition;
 class FSMStateMachine;
 
+class Unit;
+
+class GameState
+{
+	public:
+	std::list<Unit*> characters;
+	std::list<FSMStateMachine*> characterFSMs;
+	GameState() {};
+	/// std::list<Waypoint> coordinates;
+	bool calculateLOS(bool placeholder) { return placeholder; };
+};
+
+class Unit
+{
+	protected:
+	int damage = 1;
+	int health = 10;
+	int atkRange = 1;
+	int atkSpeed = 2;
+	// int moveSpeed;
+	int cooldown = 1;
+	/// int attackType = attack.MELEE;
+	public:
+	Unit(int dmg, int hp, int atkRng, int atkSpd, int cd) {
+		damage = dmg;
+		health = hp;
+		atkRange = atkRng;
+		atkSpeed = atkSpd;
+		cooldown = cd;
+	}
+	Unit* target;
+	// Waypoint* destination;
+	/// virtual void getAttackType() { return attackType };
+};
+
 class FSMState
 {
 	public:
