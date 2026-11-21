@@ -32,6 +32,12 @@ class Unit
 	void cooldownAttack() { cooldown = atkSpeed; };
 	int getCooldown() { return cooldown; };
 	void decreaseCooldown() { cooldown -= 1; };
+	void setColor(bool nonWhite) {
+		int color = 0;
+		if (nonWhite) // 91=r 92=g 93=y 94=b 95=m 96=c
+			color = (int)icon%6 + 91;
+		std::cout << "\033[" << color << "m";
+	}
 	// Waypoint* destination;
 	/// virtual void getAttackType() { return attackType };
 };
@@ -82,26 +88,26 @@ class IdentifyTarget : public FSMState {
 	public:
 			
 		void onEnter(GameState* gs, Unit* u) override {
-			std::cout << "Entered IdentifyTarget FSMState" << std::endl;
+			// std::cout << "Entered IdentifyTarget FSMState" << std::endl;
 		};
 		void onUpdate(GameState* gs, Unit* u) override {
-			std::cout << "Update IdentifyTarget FSMState" << std::endl;
+			// std::cout << "Update IdentifyTarget FSMState" << std::endl;
 		};
 		void onExit(GameState* gs, Unit* u) override {
-			std::cout << "Exit IdentifyTarget FSMState" << std::endl;
+			// std::cout << "Exit IdentifyTarget FSMState" << std::endl;
 		};
 };
 
 class ApproachTarget : public FSMState {
 	public: 
 		void onEnter(GameState* gs, Unit* u) override {
-			std::cout << "Entered ApproachTarget FSMState" << std::endl;
+			// std::cout << "Entered ApproachTarget FSMState" << std::endl;
 		};
 		void onUpdate(GameState* gs, Unit* u) override {
-			std::cout << "Update ApproachTarget FSMState" << std::endl;
+			// std::cout << "Update ApproachTarget FSMState" << std::endl;
 		};
 		void onExit(GameState* gs, Unit* u) override {
-			std::cout << "Exit ApproachTarget FSMState" << std::endl;
+			// std::cout << "Exit ApproachTarget FSMState" << std::endl;
 		};
 };
 
@@ -109,7 +115,7 @@ class AttackTarget : public FSMState {
 	public: 
 		void onEnter(GameState* gs, Unit* u) override {
 			u->cooldownAttack();
-			std::cout << "Entered AttackTarget FSMState" << std::endl;
+			// std::cout << "Entered AttackTarget FSMState" << std::endl;
 		};
 		void onUpdate(GameState* gs, Unit* u) override {
 			if (u->getCooldown() > 0) {
@@ -120,27 +126,30 @@ class AttackTarget : public FSMState {
 			}
 
 			u->cooldownAttack();
-			std::cout << "Update AttackTarget FSMState" << std::endl;
+			// std::cout << "Update AttackTarget FSMState" << std::endl;
 			int damage = 2;
 			u->target->reduceHealth(damage);
-			std::cout << u->getIcon() << " attacked " << u->target->getIcon();
+			std::cout << u->getIcon() << " attacked ";
+			u->target->setColor(true);
+			std::cout << u->target->getIcon();
+			u->setColor(true);
 			std::cout << " dealing " << damage << " damage!" << std::endl;
 		};
 		void onExit(GameState* gs, Unit* u) override {
-			std::cout << "Exit AttackTarget FSMState" << std::endl;
+			// std::cout << "Exit AttackTarget FSMState" << std::endl;
 		};
 };
 
 class Dead : public FSMState {
 	public: 
 		void onEnter(GameState* gs, Unit* u) override {
-			std::cout << "Enter Dead State" << std::endl;
+			// std::cout << "Enter Dead State" << std::endl;
 		};
 		void onUpdate(GameState* gs, Unit* u) override {
-			std::cout << "Dying Update" << std::endl;
+			// std::cout << "Dying Update" << std::endl;
 		};
 		void onExit(GameState* gs, Unit* u) override {
-			std::cout << "Exit Dead FSMState" << std::endl;
+			// std::cout << "Exit Dead FSMState" << std::endl;
 		};
 };
 
@@ -216,6 +225,7 @@ class FiniteStateMachine
 		unit = u;
 	}
 	void update() {
+		unit->setColor(true);
 		for (std::list<FSMTransition*>::iterator it = activeState->transitions.begin(); it != activeState->transitions.end(); ++it) {
 			FSMTransition* t = *it; // dereference array of transitions to single pointer
 			if (t->isValid(gameState, unit)) {
@@ -228,6 +238,7 @@ class FiniteStateMachine
 			}
 		}
 		activeState->onUpdate(gameState, unit);
+		unit->setColor(false);
 	};
 	std::list<FSMState*> states; /* used to store unique references
 				       to all states for ptr reuse
@@ -268,16 +279,31 @@ int main() {
 	std::cout << "Hello, World" << std::endl;
 	GameState game;
 	// Unit(dmg, hp, atkRng, atkSpd)
-	Unit archer(1, 4, 5, 3);
+	Unit archer(1, 4, 6, 3);
 	archer.setIcon('@');
 	game.characters.push_back(&archer);
+
 	Unit wizard(1, 4, 5, 4);
 	wizard.setIcon('%');
 	game.characters.push_back(&wizard);
+
+	Unit barbarian(2, 10, 1, 5);
+	barbarian.setIcon('#');
+	game.characters.push_back(&barbarian);
+
 	FiniteStateMachine character1(&game, &archer);
 	character1.build();
+
+	FiniteStateMachine character2(&game, &wizard);
+	character2.build();
+
+	FiniteStateMachine character3(&game, &barbarian);
+	character3.build();
+
 	for (int i=0; i<10; i++) {
 		character1.update();
+		character2.update();
+		character3.update();
 	}
 	return 0;
 }
