@@ -18,18 +18,20 @@ class Unit
 	/// int attackType = attack.MELEE;
 	char icon = '_';
 	public:
-	Unit(int dmg, int hp, int atkRng, int atkSpd, int cd) {
+	Unit(int dmg, int hp, int atkRng, int atkSpd) {
 		damage = dmg;
 		health = hp;
 		atkRange = atkRng;
 		atkSpeed = atkSpd;
-		cooldown = cd;
 	}
 	void reduceHealth(int hp) { health -= hp; };
 	int getHealth() { return health; };
 	void setIcon(char c) { icon = c; };
 	char getIcon() { return icon; };
 	Unit* target;
+	void cooldownAttack() { cooldown = atkSpeed; };
+	int getCooldown() { return cooldown; };
+	void decreaseCooldown() { cooldown -= 1; };
 	// Waypoint* destination;
 	/// virtual void getAttackType() { return attackType };
 };
@@ -106,9 +108,18 @@ class ApproachTarget : public FSMState {
 class AttackTarget : public FSMState {
 	public: 
 		void onEnter(GameState* gs, Unit* u) override {
+			u->cooldownAttack();
 			std::cout << "Entered AttackTarget FSMState" << std::endl;
 		};
 		void onUpdate(GameState* gs, Unit* u) override {
+			if (u->getCooldown() > 0) {
+				std::cout << u->getIcon() << " cooldown remaining before attacking: ";
+				std::cout << u->getCooldown() << std::endl;
+				u->decreaseCooldown();
+				return;
+			}
+
+			u->cooldownAttack();
 			std::cout << "Update AttackTarget FSMState" << std::endl;
 			int damage = 2;
 			u->target->reduceHealth(damage);
@@ -256,11 +267,11 @@ class FiniteStateMachine
 int main() {
 	std::cout << "Hello, World" << std::endl;
 	GameState game;
-	// Unit(dmg, hp, atkRng, atkSpd, cd)
-	Unit archer(1, 4, 5, 1, 2);
+	// Unit(dmg, hp, atkRng, atkSpd)
+	Unit archer(1, 4, 5, 3);
 	archer.setIcon('@');
 	game.characters.push_back(&archer);
-	Unit wizard(1, 4, 5, 1, 2);
+	Unit wizard(1, 4, 5, 4);
 	wizard.setIcon('%');
 	game.characters.push_back(&wizard);
 	FiniteStateMachine character1(&game, &archer);
