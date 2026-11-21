@@ -6,18 +6,6 @@ class FSMState;
 class FSMTransition;
 class FSMStateMachine;
 
-class Unit;
-
-class GameState
-{
-	public:
-	std::list<Unit*> characters;
-	std::list<FSMStateMachine*> characterFSMs;
-	GameState() {};
-	/// std::list<Waypoint> coordinates;
-	bool calculateLOS(bool placeholder) { return placeholder; };
-};
-
 class Unit
 {
 	protected:
@@ -28,6 +16,7 @@ class Unit
 	// int moveSpeed;
 	int cooldown = 1;
 	/// int attackType = attack.MELEE;
+	char icon = '_';
 	public:
 	Unit(int dmg, int hp, int atkRng, int atkSpd, int cd) {
 		damage = dmg;
@@ -38,9 +27,32 @@ class Unit
 	}
 	void reduceHealth(int hp) { health -= hp; };
 	int getHealth() { return health; };
+	void setIcon(char c) { icon = c; };
+	char getIcon() { return icon; };
 	Unit* target;
 	// Waypoint* destination;
 	/// virtual void getAttackType() { return attackType };
+};
+
+class GameState
+{
+	public:
+	std::list<Unit*> characters;
+	std::list<FSMStateMachine*> characterFSMs;
+	GameState() {};
+	/// std::list<Waypoint> coordinates;
+	bool calculateLOS(bool placeholder) { return placeholder; };
+	bool targetInRange(Unit* attacker, Unit* target) { 
+		// return Distance(u1, u2) < u1->atkRange;
+		return true; };
+	Unit* getTargetFor(Unit* character) {
+		// return character;
+		if (characters.front() == character)
+		{
+			return characters.back();
+		}
+		return characters.front();
+	}
 };
 
 class FSMState
@@ -82,13 +94,29 @@ class ApproachTarget : public FSMState {
 	public: 
 		void onEnter(GameState* gs, Unit* u) override {
 			std::cout << "Entered ApproachTarget FSMState" << std::endl;
-			u->reduceHealth(2);
 		};
 		void onUpdate(GameState* gs, Unit* u) override {
 			std::cout << "Update ApproachTarget FSMState" << std::endl;
 		};
 		void onExit(GameState* gs, Unit* u) override {
 			std::cout << "Exit ApproachTarget FSMState" << std::endl;
+		};
+};
+
+class AttackTarget : public FSMState {
+	public: 
+		void onEnter(GameState* gs, Unit* u) override {
+			std::cout << "Entered AttackTarget FSMState" << std::endl;
+		};
+		void onUpdate(GameState* gs, Unit* u) override {
+			std::cout << "Update AttackTarget FSMState" << std::endl;
+			int damage = 2;
+			u->target->reduceHealth(damage);
+			std::cout << u->getIcon() << " attacked " << u->target->getIcon();
+			std::cout << " dealing " << damage << " damage!" << std::endl;
+		};
+		void onExit(GameState* gs, Unit* u) override {
+			std::cout << "Exit AttackTarget FSMState" << std::endl;
 		};
 };
 
@@ -109,7 +137,8 @@ class LostTarget : public FSMTransition {
 	public:
 	LostTarget(FSMState* targetState) : FSMTransition(targetState) {}
 	bool isValid(GameState* gs, Unit* u) override { 
-		return true;
+		bool noLongerHasTarget = ( u->target == nullptr );
+		return noLongerHasTarget;
 	};
 	FSMState* getNextState(GameState* gs, Unit* u) override {
 		return nextState;
@@ -123,13 +152,32 @@ class FoundTarget : public FSMTransition {
 	public:
 	FoundTarget(FSMState* targetState) : FSMTransition(targetState) {}
 	bool isValid(GameState* gs, Unit* u) override { 
-		return true;
+		bool hasLineOfSight = gs->calculateLOS( true );
+		u->target = gs->getTargetFor(u);
+		return hasLineOfSight;
 	};
 	FSMState* getNextState(GameState* gs, Unit* u) override {
 		return nextState;
 	};
 	void onTransition(GameState* gs, Unit* u) override {
+		u->target = gs->getTargetFor(u);
+		std::cout << u->getIcon() << " FoundTarget " << u->target->getIcon() << std::endl;
 		std::cout << "ApproachTarget after FoundTarget" << std::endl;
+	};
+};
+
+class StartAttack : public FSMTransition {
+	public:
+	StartAttack(FSMState* targetState) : FSMTransition(targetState) {}
+	bool isValid(GameState* gs, Unit* u) override { 
+		bool canAttack = gs->targetInRange(u, u->target);
+		return canAttack;
+	};
+	FSMState* getNextState(GameState* gs, Unit* u) override {
+		return nextState;
+	};
+	void onTransition(GameState* gs, Unit* u) override {
+		std::cout << u->getIcon() << " Starting to attack " << u->target->getIcon() << std::endl;
 	};
 };
 
@@ -180,6 +228,7 @@ class FiniteStateMachine
 		// build phase 1 create States and set starting States
 		FSMState* identify = new IdentifyTarget();
 		FSMState* approach = new ApproachTarget();
+		FSMState* attack = new AttackTarget();
 		FSMState* death = new Dead();
 
 		states.push_back(identify);
@@ -191,20 +240,30 @@ class FiniteStateMachine
 		// build phase 2 create Transitions
 		FSMTransition* reidentify = new LostTarget(identify);
 		FSMTransition* reapproach = new FoundTarget(approach);
+		FSMTransition* attacking = new StartAttack(attack);
 		FSMTransition* dying = new DyingTransition(death);
 
 		identify->transitions.push_back(dying);
 		identify->transitions.push_back(reapproach);
 		approach->transitions.push_back(dying);
 		approach->transitions.push_back(reidentify);
+		approach->transitions.push_back(attacking);
+		attack->transitions.push_back(dying);
+		attack->transitions.push_back(reidentify);
 	}
 };
 
 int main() {
 	std::cout << "Hello, World" << std::endl;
+	GameState game;
 	// Unit(dmg, hp, atkRng, atkSpd, cd)
 	Unit archer(1, 4, 5, 1, 2);
-	FiniteStateMachine character1(nullptr, &archer);
+	archer.setIcon('@');
+	game.characters.push_back(&archer);
+	Unit wizard(1, 4, 5, 1, 2);
+	wizard.setIcon('%');
+	game.characters.push_back(&wizard);
+	FiniteStateMachine character1(&game, &archer);
 	character1.build();
 	for (int i=0; i<10; i++) {
 		character1.update();
