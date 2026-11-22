@@ -101,6 +101,7 @@ class Unit
 	};
 	void setTeam(int team) { isTeam1 = team%2; };
 	bool getTeam() { return isTeam1; };
+	int getAtkRange() { return atkRange; };
 	Waypoint* location;
 	// Waypoint* destination;
 	/// virtual void getAttackType() { return attackType };
@@ -115,15 +116,24 @@ class GameState
 	Waypoint waypoints[10];
 	/// std::list<Waypoint> coordinates;
 	bool calculateLOS(bool placeholder) { return placeholder; };
+	int distance(Waypoint* start, Waypoint* end) {
+		int dist = abs(start->x - end->x);
+		if (dist < 0) std::cout << "somehow dist is negative: " << dist << std::endl;
+		return dist;
+	};
 	bool targetInRange(Unit* attacker, Unit* target) { 
-		// return Distance(u1, u2) < u1->atkRange;
-		return true; };
+		return distance(attacker->location, target->location) < attacker->getAtkRange();
+	};
 	Unit* getTargetFor(Unit* character) {
-		// return character;
-		if (characters.front() == character)
-		{
-			return characters.back();
+		int pos = character->location->x;
+		int team1 = character->getTeam();
+		int rOrL = character->getTeam() * 2 - 1;
+		for (int i=pos; i>0-team1 && i<11-team1; i=i+rOrL) {
+			if (waypoints[i].character
+				&& waypoints[i].character->getTeam() != character->getTeam())
+				return waypoints[i].character;
 		}
+		// failsafe
 		return characters.front();
 	};
 	void SetWaypoints() {
@@ -137,17 +147,37 @@ class GameState
 	};
 	void placeUnitsOnTeams(Unit* u1, Unit* u2, Unit* u3, Unit* u4, Unit* u5, Unit* u6) {
 		u1->location = &waypoints[0];
+		waypoints[0].character = u1;
 		u1->setTeam(1);
+		characters.push_back(u1);
 		u2->location = &waypoints[1];
+		waypoints[1].character = u2;
 		u2->setTeam(1);
+		characters.push_back(u2);
 		u3->location = &waypoints[2];
+		waypoints[2].character = u3;
 		u3->setTeam(1);
+		characters.push_back(u3);
 		u4->location = &waypoints[7];
+		waypoints[7].character = u4;
 		u4->setTeam(2);
+		characters.push_back(u4);
 		u5->location = &waypoints[8];
+		waypoints[8].character = u5;
 		u5->setTeam(2);
+		characters.push_back(u5);
 		u6->location = &waypoints[9];
+		waypoints[9].character = u6;
 		u6->setTeam(2);
+		characters.push_back(u6);
+	}
+	void draw() {
+		for (Unit* u : characters) {
+			u->setColor(true, u->getTeam());
+			std::cout << u->getIcon();
+			u->target->setColor(false, false);
+		}
+		std::cout << std::endl;
 	}
 };
 
@@ -261,7 +291,7 @@ class FoundTarget : public FSMTransition {
 	FoundTarget(FSMState* targetState) : FSMTransition(targetState) {}
 	bool isValid(GameState* gs, Unit* u) override { 
 		bool hasLineOfSight = gs->calculateLOS( true );
-		u->target = gs->getTargetFor(u);
+		u->target = gs->getTargetFor(u); // unsure if redundant
 		return hasLineOfSight;
 	};
 	FSMState* getNextState(GameState* gs, Unit* u) override {
@@ -369,30 +399,24 @@ int main() {
 
 	// Unit(dmg, hp, atkRng, atkSpd)
 	// Team 1
-	Unit archer(1, 1, 6, 3);
+	Unit archer(1, 1, 7, 3);
 	archer.setIcon('@');
-	game.characters.push_back(&archer);
 
-	Unit wizard(1, 4, 5, 4);
+	Unit wizard(1, 4, 6, 4);
 	wizard.setIcon('%');
-	game.characters.push_back(&wizard);
 
 	Unit barbarian(2, 10, 1, 5);
 	barbarian.setIcon('#');
-	game.characters.push_back(&barbarian);
 
 	// Team 2
 	Unit thief(2, 1, 1, 1);
 	thief.setIcon('$');
-	game.characters.push_back(&thief);
 
-	Unit mage(1, 4, 5, 4);
+	Unit mage(1, 4, 7, 4);
 	mage.setIcon('/');
-	game.characters.push_back(&mage);
 
 	Unit bomber(3, 2, 3, 6);
 	bomber.setIcon('!');
-	game.characters.push_back(&bomber);
 
 
 	FiniteStateMachine character1(&game, &archer);
@@ -415,6 +439,7 @@ int main() {
 	character6.build();
 	game.SetWaypoints();
 	game.placeUnitsOnTeams(&archer, &wizard, &barbarian, &thief, &mage, &bomber);
+	game.draw();
 
 	for (int i=0; i<10; i++) {
 		character1.update();
