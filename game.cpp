@@ -223,6 +223,22 @@ class ApproachTarget : public FSMState {
 		};
 		void onUpdate(GameState* gs, Unit* u) override {
 			// std::cout << "Update ApproachTarget FSMState" << std::endl;
+			Waypoint* movFromWP = nullptr;
+			Waypoint* movToWP = nullptr;
+			if ( u->location->x  <  u->target->location->x ) {
+				if (!(gs->waypoints[u->location->x + 1].character))
+				{
+					u->location = &(gs->waypoints[u->location->x + 1]);
+					return;
+				}
+				movFromWP = u->location;
+				movToWP = &(gs->waypoints[u->location->x + 1]);
+				std::cout << u->getIcon() << " swapped with " << movToWP->character->getIcon() << std::endl;
+				u->location = movToWP;
+				movToWP->character->location = movFromWP;
+				movFromWP->character = movToWP->character;
+				movToWP->character = u;
+			}
 		};
 		void onExit(GameState* gs, Unit* u) override {
 			// std::cout << "Exit ApproachTarget FSMState" << std::endl;
@@ -275,7 +291,7 @@ class LostTarget : public FSMTransition {
 	public:
 	LostTarget(FSMState* targetState) : FSMTransition(targetState) {}
 	bool isValid(GameState* gs, Unit* u) override { 
-		bool noLongerHasTarget = ( u->target == nullptr );
+		bool noLongerHasTarget = ( u->target == nullptr || u->target->getHealth()<0 );
 		return noLongerHasTarget;
 	};
 	FSMState* getNextState(GameState* gs, Unit* u) override {
@@ -442,6 +458,7 @@ int main() {
 	game.draw();
 
 	for (int i=0; i<10; i++) {
+		game.draw();
 		character1.update();
 		character2.update();
 		character3.update();
