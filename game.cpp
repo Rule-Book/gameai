@@ -369,7 +369,7 @@ int main() {
 
 	// Unit(dmg, hp, atkRng, atkSpd)
 	// Team 1
-	Unit archer(1, -1, 6, 3);
+	Unit archer(1, 1, 6, 3);
 	archer.setIcon('@');
 	game.characters.push_back(&archer);
 
@@ -382,7 +382,7 @@ int main() {
 	game.characters.push_back(&barbarian);
 
 	// Team 2
-	Unit thief(1, -1, 6, 3);
+	Unit thief(2, 1, 1, 1);
 	thief.setIcon('$');
 	game.characters.push_back(&thief);
 
@@ -390,7 +390,7 @@ int main() {
 	mage.setIcon('/');
 	game.characters.push_back(&mage);
 
-	Unit bomber(2, 10, 1, 5);
+	Unit bomber(3, 2, 3, 6);
 	bomber.setIcon('!');
 	game.characters.push_back(&bomber);
 
