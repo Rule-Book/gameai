@@ -5,9 +5,11 @@
 class FSMState;
 class FSMTransition;
 class FSMStateMachine;
+class Unit;
 
 class Waypoint
 {
+	public:
 	Unit* character = nullptr;
 	bool isTeam1 = true;
 	bool isClimbable = false;
@@ -15,9 +17,12 @@ class Waypoint
 	bool canBeTerrain = false;
 	bool isFlatGround = true;
 	bool isFlatWall = false;
+	int x = 0;
+	int y = 0;
 	Waypoint* rightNeighbor = nullptr;
 	Waypoint* leftNeighbor = nullptr;
-	Waypoint(Unit* c, bool team, bool climb, bool rope, bool terrain, bool ground, bool wall) {
+	Waypoint() {};
+	Waypoint(Unit* c, bool team, bool climb, bool rope, bool terrain, bool ground, bool wall, int lat, int lon) {
 		character = c;
 		isTeam1 = team;
 		isClimbable = climb;
@@ -25,32 +30,38 @@ class Waypoint
 		canBeTerrain = terrain;
 		isFlatGround = ground;
 		isFlatWall = wall;
-	}
+		x = lat;
+		y = lon;
+	};
 	void setRightNeighbor(Waypoint* r) {
 		rightNeighbor = r;
-	}
+	};
 	void setleftNeighbor(Waypoint* l) {
 		leftNeighbor = l;
-	}
+	};
 	void makeFlatWall() {
 		canBeTerrain = true;
 		isFlatGround = false;
 		isFlatWall = true;
-	}
+		y = !isFlatGround;
+	};
 	void makeFlatGround() {
 		canBeTerrain = true;
 		isFlatGround = true;
 		isFlatWall = false;
-	}
+		y = !isFlatGround;
+	};
 	void makeRamp() {
 		canBeTerrain = true;
-		isFlatGround = true;
+		isFlatGround = false;
 		isFlatWall = false;
-	}
+		y = !isFlatGround;
+	};
 	void addLadderOrRope() {
 		if (isClimbable)
 			hasLadderOrRope = true;
-	}
+	};
+};
 
 class Unit
 {
@@ -80,12 +91,13 @@ class Unit
 	void cooldownAttack() { cooldown = atkSpeed; };
 	int getCooldown() { return cooldown; };
 	void decreaseCooldown() { cooldown -= 1; };
-	void setColor(bool nonWhite) {
+	void setColor(bool nonWhite, bool team) {
 		int color = 0;
 		if (nonWhite) // 91=r 92=g 93=y 94=b 95=m 96=c
 			color = (int)icon%6 + 31 + team*60;
 		std::cout << "\033[" << color << "m";
-	}
+	};
+	bool getTeam() { return isTeam1; };
 	Waypoint location;
 	// Waypoint* location;
 	// Waypoint* destination;
@@ -111,7 +123,10 @@ class GameState
 			return characters.back();
 		}
 		return characters.front();
-	}
+	};
+	void SetWaypoints() {
+		waypoints[0].x = 4;
+	};
 };
 
 class FSMState
@@ -181,9 +196,9 @@ class AttackTarget : public FSMState {
 			int damage = 2;
 			u->target->reduceHealth(damage);
 			std::cout << u->getIcon() << " attacked ";
-			u->target->setColor(true);
+			u->target->setColor(true, u->getTeam());
 			std::cout << u->target->getIcon();
-			u->setColor(true);
+			u->setColor(true, u->getTeam());
 			std::cout << " dealing " << damage << " damage!" << std::endl;
 		};
 		void onExit(GameState* gs, Unit* u) override {
@@ -276,7 +291,7 @@ class FiniteStateMachine
 		unit = u;
 	}
 	void update() {
-		unit->setColor(true);
+		unit->setColor(true, unit->getTeam());
 		for (std::list<FSMTransition*>::iterator it = activeState->transitions.begin(); it != activeState->transitions.end(); ++it) {
 			FSMTransition* t = *it; // dereference array of transitions to single pointer
 			if (t->isValid(gameState, unit)) {
@@ -289,7 +304,7 @@ class FiniteStateMachine
 			}
 		}
 		activeState->onUpdate(gameState, unit);
-		unit->setColor(false);
+		unit->setColor(false, unit->getTeam());
 	};
 	std::list<FSMState*> states; /* used to store unique references
 				       to all states for ptr reuse
@@ -329,6 +344,7 @@ class FiniteStateMachine
 int main() {
 	std::cout << "Hello, World" << std::endl;
 	GameState game;
+	game.SetWaypoints();
 	// Unit(dmg, hp, atkRng, atkSpd)
 	Unit archer(1, -1, 6, 3, true);
 	archer.setIcon('@');
