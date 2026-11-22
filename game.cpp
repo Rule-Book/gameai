@@ -6,6 +6,52 @@ class FSMState;
 class FSMTransition;
 class FSMStateMachine;
 
+class Waypoint
+{
+	Unit* character = nullptr;
+	bool isTeam1 = true;
+	bool isClimbable = false;
+	bool hasLadderOrRope = false;
+	bool canBeTerrain = false;
+	bool isFlatGround = true;
+	bool isFlatWall = false;
+	Waypoint* rightNeighbor = nullptr;
+	Waypoint* leftNeighbor = nullptr;
+	Waypoint(Unit* c, bool team, bool climb, bool rope, bool terrain, bool ground, bool wall) {
+		character = c;
+		isTeam1 = team;
+		isClimbable = climb;
+		hasLadderOrRope = rope;
+		canBeTerrain = terrain;
+		isFlatGround = ground;
+		isFlatWall = wall;
+	}
+	void setRightNeighbor(Waypoint* r) {
+		rightNeighbor = r;
+	}
+	void setleftNeighbor(Waypoint* l) {
+		leftNeighbor = l;
+	}
+	void makeFlatWall() {
+		canBeTerrain = true;
+		isFlatGround = false;
+		isFlatWall = true;
+	}
+	void makeFlatGround() {
+		canBeTerrain = true;
+		isFlatGround = true;
+		isFlatWall = false;
+	}
+	void makeRamp() {
+		canBeTerrain = true;
+		isFlatGround = true;
+		isFlatWall = false;
+	}
+	void addLadderOrRope() {
+		if (isClimbable)
+			hasLadderOrRope = true;
+	}
+
 class Unit
 {
 	protected:
@@ -17,12 +63,14 @@ class Unit
 	int cooldown = 1;
 	/// int attackType = attack.MELEE;
 	char icon = '_';
+	bool isTeam1 = true;
 	public:
-	Unit(int dmg, int hp, int atkRng, int atkSpd) {
+	Unit(int dmg, int hp, int atkRng, int atkSpd, bool team) {
 		damage = dmg;
 		health = hp;
 		atkRange = atkRng;
 		atkSpeed = atkSpd;
+		isTeam1 = team;
 	}
 	void reduceHealth(int hp) { health -= hp; };
 	int getHealth() { return health; };
@@ -35,9 +83,11 @@ class Unit
 	void setColor(bool nonWhite) {
 		int color = 0;
 		if (nonWhite) // 91=r 92=g 93=y 94=b 95=m 96=c
-			color = (int)icon%6 + 91;
+			color = (int)icon%6 + 31 + team*60;
 		std::cout << "\033[" << color << "m";
 	}
+	Waypoint location;
+	// Waypoint* location;
 	// Waypoint* destination;
 	/// virtual void getAttackType() { return attackType };
 };
@@ -48,6 +98,7 @@ class GameState
 	std::list<Unit*> characters;
 	std::list<FSMStateMachine*> characterFSMs;
 	GameState() {};
+	Waypoint waypoints[10];
 	/// std::list<Waypoint> coordinates;
 	bool calculateLOS(bool placeholder) { return placeholder; };
 	bool targetInRange(Unit* attacker, Unit* target) { 
@@ -279,15 +330,15 @@ int main() {
 	std::cout << "Hello, World" << std::endl;
 	GameState game;
 	// Unit(dmg, hp, atkRng, atkSpd)
-	Unit archer(1, 4, 6, 3);
+	Unit archer(1, -1, 6, 3, true);
 	archer.setIcon('@');
 	game.characters.push_back(&archer);
 
-	Unit wizard(1, 4, 5, 4);
+	Unit wizard(1, 4, 5, 4, true);
 	wizard.setIcon('%');
 	game.characters.push_back(&wizard);
 
-	Unit barbarian(2, 10, 1, 5);
+	Unit barbarian(2, 10, 1, 5, true);
 	barbarian.setIcon('#');
 	game.characters.push_back(&barbarian);
 
