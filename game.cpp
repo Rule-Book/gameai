@@ -57,6 +57,9 @@ class Waypoint
 		isFlatWall = false;
 		y = !isFlatGround;
 	};
+	void makeClimbable() {
+		isClimbable = true;
+	};
 	void addLadderOrRope() {
 		if (isClimbable)
 			hasLadderOrRope = true;
@@ -76,12 +79,11 @@ class Unit
 	char icon = '_';
 	bool isTeam1 = true;
 	public:
-	Unit(int dmg, int hp, int atkRng, int atkSpd, bool team) {
+	Unit(int dmg, int hp, int atkRng, int atkSpd) {
 		damage = dmg;
 		health = hp;
 		atkRange = atkRng;
 		atkSpeed = atkSpd;
-		isTeam1 = team;
 	}
 	void reduceHealth(int hp) { health -= hp; };
 	int getHealth() { return health; };
@@ -97,9 +99,9 @@ class Unit
 			color = (int)icon%6 + 31 + team*60;
 		std::cout << "\033[" << color << "m";
 	};
+	void setTeam(int team) { isTeam1 = team%2; };
 	bool getTeam() { return isTeam1; };
-	Waypoint location;
-	// Waypoint* location;
+	Waypoint* location;
 	// Waypoint* destination;
 	/// virtual void getAttackType() { return attackType };
 };
@@ -125,8 +127,28 @@ class GameState
 		return characters.front();
 	};
 	void SetWaypoints() {
-		waypoints[0].x = 4;
+		for (int xcoord = 0; xcoord<10; xcoord++) {
+			waypoints[xcoord].x = xcoord;
+		}
+		waypoints[3].makeClimbable();
+		waypoints[4].makeFlatGround();
+		waypoints[5].makeFlatGround();
+		waypoints[6].makeClimbable();
 	};
+	void placeUnitsOnTeams(Unit* u1, Unit* u2, Unit* u3, Unit* u4, Unit* u5, Unit* u6) {
+		u1->location = &waypoints[0];
+		u1->setTeam(1);
+		u2->location = &waypoints[1];
+		u2->setTeam(1);
+		u3->location = &waypoints[2];
+		u3->setTeam(1);
+		u4->location = &waypoints[7];
+		u4->setTeam(2);
+		u5->location = &waypoints[8];
+		u5->setTeam(2);
+		u6->location = &waypoints[9];
+		u6->setTeam(2);
+	}
 };
 
 class FSMState
@@ -344,19 +366,34 @@ class FiniteStateMachine
 int main() {
 	std::cout << "Hello, World" << std::endl;
 	GameState game;
-	game.SetWaypoints();
+
 	// Unit(dmg, hp, atkRng, atkSpd)
-	Unit archer(1, -1, 6, 3, true);
+	// Team 1
+	Unit archer(1, -1, 6, 3);
 	archer.setIcon('@');
 	game.characters.push_back(&archer);
 
-	Unit wizard(1, 4, 5, 4, true);
+	Unit wizard(1, 4, 5, 4);
 	wizard.setIcon('%');
 	game.characters.push_back(&wizard);
 
-	Unit barbarian(2, 10, 1, 5, true);
+	Unit barbarian(2, 10, 1, 5);
 	barbarian.setIcon('#');
 	game.characters.push_back(&barbarian);
+
+	// Team 2
+	Unit thief(1, -1, 6, 3);
+	thief.setIcon('$');
+	game.characters.push_back(&thief);
+
+	Unit mage(1, 4, 5, 4);
+	mage.setIcon('/');
+	game.characters.push_back(&mage);
+
+	Unit bomber(2, 10, 1, 5);
+	bomber.setIcon('!');
+	game.characters.push_back(&bomber);
+
 
 	FiniteStateMachine character1(&game, &archer);
 	character1.build();
@@ -367,10 +404,25 @@ int main() {
 	FiniteStateMachine character3(&game, &barbarian);
 	character3.build();
 
+
+	FiniteStateMachine character4(&game, &thief);
+	character4.build();
+
+	FiniteStateMachine character5(&game, &mage);
+	character5.build();
+
+	FiniteStateMachine character6(&game, &bomber);
+	character6.build();
+	game.SetWaypoints();
+	game.placeUnitsOnTeams(&archer, &wizard, &barbarian, &thief, &mage, &bomber);
+
 	for (int i=0; i<10; i++) {
 		character1.update();
 		character2.update();
 		character3.update();
+		character4.update();
+		character5.update();
+		character6.update();
 	}
 	return 0;
 }
