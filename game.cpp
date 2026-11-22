@@ -102,6 +102,7 @@ class Unit
 	void setTeam(int team) { isTeam1 = team%2; };
 	bool getTeam() { return isTeam1; };
 	int getAtkRange() { return atkRange; };
+	int getDamage() { return damage; };
 	Waypoint* location;
 	// Waypoint* destination;
 	/// virtual void getAttackType() { return attackType };
@@ -130,10 +131,12 @@ class GameState
 		int rOrL = character->getTeam() * 2 - 1;
 		for (int i=pos; i>0-team1 && i<11-team1; i=i+rOrL) {
 			if (waypoints[i].character
-				&& waypoints[i].character->getTeam() != character->getTeam())
+				&& waypoints[i].character->getTeam() != character->getTeam()
+				&& waypoints[i].character->getHealth()>0)
 				return waypoints[i].character;
 		}
 		// failsafe
+		std::cout << "Hit the failsafe, probably need to end the game" << std::endl;
 		return characters.front();
 	};
 	void SetWaypoints() {
@@ -261,7 +264,7 @@ class AttackTarget : public FSMState {
 
 			u->cooldownAttack();
 			// std::cout << "Update AttackTarget FSMState" << std::endl;
-			int damage = 2;
+			int damage = u->getDamage();
 			u->target->reduceHealth(damage);
 			std::cout << u->getIcon() << " attacked ";
 			u->target->setColor(true, u->getTeam());
