@@ -177,6 +177,12 @@ class GameState
 	void draw() {
 		for (Unit* u : characters) {
 			u->setColor(true, u->getTeam());
+			std::cout << std::max(u->getHealth(), 0);
+			u->target->setColor(false, false);
+		}
+		std::cout << std::endl;
+		for (Unit* u : characters) {
+			u->setColor(true, u->getTeam());
 			std::cout << u->getIcon();
 			u->target->setColor(false, false);
 		}
